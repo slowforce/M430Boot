@@ -1,14 +1,22 @@
-/******************************************************************************
- * Copyright (C) 2013-2014 Pyxis-lab LLC
- *
- *-----------------------------------------------------------------------------
+/**************************************************************************
  * File: 			protocol.c
- * Description:		implement user defined protocols
- * Author:			Tim (tim.xu@pyxis-lab.com)
- * Date:			Jan 24, 2013
- *****************************************************************************/
+ * Description:		parse communication protocols
+ * Copyright (C) <2013>  <Tim.Xu> slowforce@gmail.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
 
-/* ----------------------- Platform includes --------------------------------*/
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #include "datatype.h"
 #include "checksum.h"
 #include "flash.h"
@@ -34,7 +42,7 @@ void protoSetDeviceId(uint8 *data, uint8 len)
 			    ((uint32)data[1] << 8)  | \
 			    ((uint32)data[0] << 0) );
 
-	gParam.sys.serial = serial;
+	gSysParam.serial = serial;
 	g_sysOperMode |= MODE_PARAM_UPDATE;
 
 	/*******************************
@@ -47,7 +55,7 @@ void protoSetDeviceId(uint8 *data, uint8 len)
 
 void protoGetDeviceId(uint8 *data, uint8 len)
 {
-	uint32 serial = gParam.sys.serial;
+	uint32 serial = gSysParam.serial;
 
 	data[3] = (serial >> 24) & 0xFF;
 	data[2] = (serial >> 16) & 0xFF;
@@ -61,7 +69,7 @@ void protoSetDeviceAddr(uint8 *data, uint8 len)
 {
 	if ( (data[0] >= ADDRESS_MIN) && (data[0] <= ADDRESS_MAX) )
 	{
-		gParam.sys.modbusAddr = data[0];
+		gSysParam.modbusAddr = data[0];
 		g_sysOperMode |= MODE_PARAM_UPDATE;
 		data[0] = ACK;
 	}
@@ -75,49 +83,15 @@ void protoSetDeviceAddr(uint8 *data, uint8 len)
 
 void protoGetDeviceAddr(uint8 *data, uint8 len)
 {
-	data[0] = gParam.sys.modbusAddr;
-
-	return ;
-}
-
-void protoSetTime(uint8 *data, uint8 len)
-{
-	uint32 epoch;
-
-	epoch =  ( ((uint32)data[3] << 24) | \
-			   ((uint32)data[2] << 16) | \
-			   ((uint32)data[1] << 8)  | \
-			   ((uint32)data[0] << 0) );
-
-	gParam.sys.currentTimestamp = epoch;
-	g_sysOperMode |= MODE_PARAM_UPDATE;
-
-	/*******************************
-	 * set reply message
-	 ******************************/
-	data[0] = ACK;
-
-	return ;
-}
-
-void protoGetTime(uint8 *data, uint8 len)
-{
-	uint32 epoch = gParam.sys.currentTimestamp;
-
-	data[3] = (epoch >> 24) & 0xFF;
-	data[2] = (epoch >> 16) & 0xFF;
-	data[1] = (epoch >> 8)  & 0xFF;
-	data[0] = (epoch >> 0)  & 0xFF;
+	data[0] = gSysParam.modbusAddr;
 
 	return ;
 }
 
 void protoSetFwInfo(uint8 *data, uint8 len)
 {
-	uint16 version;
 	uint32 length;
 
-	version = ( ((uint16)data[1] << 8) | ((uint16)data[0]<<0) );
 	length  = ( ((uint32)data[5] << 24) | \
 		    	((uint32)data[4] << 16) | \
 		    	((uint32)data[3] << 8)  | \
@@ -129,14 +103,13 @@ void protoSetFwInfo(uint8 *data, uint8 len)
 	}
 	else
 	{
-		gParam.sys.swVer = version;
 		g_firmwareLength = length;
 		g_firmwareRecvLength = 0;
 
 		/*********************************
 		 * 1. upgrade firmware version
 		 ********************************/
-		updateParams();
+		updateSysParams(&gSysParam);
 
 		/*********************************
 		 * 2. erase application segments
@@ -146,14 +119,6 @@ void protoSetFwInfo(uint8 *data, uint8 len)
 		g_protoState = PROTO_STAT_UPGRADE;
 		data[0] = ACK;
 	}
-
-	return ;
-}
-
-void protoGetFwInfo(uint8 *data, uint8 len)
-{
-	data[1] = (gParam.sys.swVer >> 8)  & 0xFF;
-	data[0] = (gParam.sys.swVer >> 0)  & 0xFF;
 
 	return ;
 }
@@ -263,7 +228,7 @@ eProtocolErrno protocolCheckPacket(void)
 	{
 		rc = PROTO_ESIZE;
 	}
-	else if ( (pkt[ADDR_OFF] != ADDR_BROADCAST) && (pkt[ADDR_OFF] != gParam.sys.modbusAddr) )
+	else if ( (pkt[ADDR_OFF] != ADDR_BROADCAST) && (pkt[ADDR_OFF] != gSysParam.modbusAddr) )
 	{
 		rc = PROTO_EADDR;
 	}
@@ -369,21 +334,6 @@ void protocolProcessPacket(void)
 	case FUNC_GETADDR:
 		protoGetDeviceAddr(pldBuf, pldLen);
 		g_serialPortBuf[PLEN_OFF] = 1;
-		break;
-
-	case FUNC_SETTIME:
-		protoSetTime(pldBuf, pldLen);
-		g_serialPortBuf[PLEN_OFF] = 1;
-		break;
-
-	case FUNC_GETTIME:
-		protoGetTime(pldBuf, pldLen);
-		g_serialPortBuf[PLEN_OFF] = 4;
-		break;
-
-	case FUNC_GETFWINFO:
-		protoGetFwInfo(pldBuf, pldLen);
-		g_serialPortBuf[PLEN_OFF] = 2;
 		break;
 
 	case FUNC_BOOT2UPGRADE:	// also implemented in probe application code

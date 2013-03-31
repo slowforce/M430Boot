@@ -1,11 +1,22 @@
-/******************************************************************************
+/**************************************************************************
  * File: 			bootloader.c
- * Description:		Customized MSP430 bootloader
- * Author:			Tim (tim.xu@pyxis-lab.com)
- * Date:			Jan 16, 2013
- *****************************************************************************/
+ * Description:		entry point of bootloader module
+ * Copyright (C) <2013>  <Tim.Xu> slowforce@gmail.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
 
-/* ----------------------- Platform includes --------------------------------*/
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #include "datatype.h"
 #include "flash.h"
 #include "param.h"
@@ -50,7 +61,7 @@ void sendBootupPacket(void)
 {
 	g_serialPortRecvState = STATE_RX_IDLE;
 
-	g_serialPortBuf[ADDR_OFF] = gParam.sys.modbusAddr;
+	g_serialPortBuf[ADDR_OFF] = gSysParam.modbusAddr;
 	g_serialPortBuf[FUNC_OFF] = FUNC_BOOT2UPGRADE;
 	g_serialPortBuf[SEQ_OFF] = 1;
 	g_serialPortBuf[PLEN_OFF] = 1;
@@ -84,12 +95,12 @@ void main(void)
 	/***************************************************
 	 * initialize boot parameters
 	 **************************************************/
-	initBootParam();
+	initBootParam(&gBootParam);
 
 	/***************************************************
 	 * initialize system parameters
 	 **************************************************/
-	initParams();
+	initSysParams(&gSysParam);
 
 	/***************************************************
 	 * read Timer A, USART0 Tx/Rx interrupt reset
@@ -158,7 +169,7 @@ void main(void)
 	/***************************************************
 	 * initialize serial port
 	 **************************************************/
-	initSerialPort(gParam.sys.modbusBaud, (uint8)gParam.sys.modbusDatabits, (uint8)gParam.sys.modbusParity);
+	initSerialPort(gSysParam.modbusBaud, (uint8)gSysParam.modbusDatabits, (uint8)gSysParam.modbusParity);
 
 	/**********************************************
 	 * send out bootup packet to acknowledge
@@ -176,7 +187,7 @@ void main(void)
 		else if (g_sysOperMode & MODE_PARAM_UPDATE)
 		{
 			g_sysOperMode &= ~MODE_PARAM_UPDATE;
-			updateParams();
+			updateSysParams(&gSysParam);
 		}
 		else if (g_sysOperMode & MODE_REBOOT_APP)
 		{

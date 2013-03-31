@@ -1,9 +1,21 @@
-/******************************************************************************
+/**************************************************************************
  * File: 			flash.h
- * Description:		header file for flash functions
- * Author:			Tim (tim.xu@pyxis-lab.com)
- * Date:			Dec 26, 2012
- *****************************************************************************/
+ * Description:		header file for flash read/write API
+ * Copyright (C) <2013>  <Tim.Xu> slowforce@gmail.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ************************************************************************/
 
 #ifndef __FLASH_H__
 #define __FLASH_H__
@@ -12,7 +24,6 @@
 extern "C" {
 #endif
 
-/* ----------------------- Defines ------------------------------------------*/
 #define	FLASH_INFO_A				(0x1080)
 #define	FLASH_INFO_B				(0x1000)
 

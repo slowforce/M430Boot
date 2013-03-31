@@ -1,21 +1,29 @@
-/******************************************************************************
- * Copyright (C) 2013-2014 Pyxis-lab LLC
- *
- *-----------------------------------------------------------------------------
+/**************************************************************************
  * File: 			param.c
- * Description:		system parameter operation
- * Author:			Tim (tim.xu@pyxis-lab.com)
- * Date:			Jan 15, 2013
- *****************************************************************************/
+ * Description:		manage bootloader and system parameters
+ * Copyright (C) <2013>  <Tim.Xu> slowforce@gmail.com
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
 
-/* ----------------------- Platform includes --------------------------------*/
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ ************************************************************************/
+
 #include "datatype.h"
 #include "flash.h"
 #include "param.h"
 #include "serial.h"
 #include "timer.h"
 
-SYSPARAM_T  	gSysParam;
+SYSPARAM_T  gSysParam;
 BOOTPARAM_T	gBootParam;
 
 void resetSysParams(SYSPARAM_T *sys)
@@ -85,8 +93,8 @@ void initBootParam(BOOTPARAM_T *boot)
 
 	if (gBootParam.rsvd1 != 0x0001)
 	{
-		resetBootParam();
-		updateBootParam();
+		resetBootParam(boot);
+		updateBootParam(boot);
 	}
 
 	return ;

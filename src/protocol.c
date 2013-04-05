@@ -33,43 +33,11 @@ eProtocolState 	g_protoState;
 INTRVECT_T 		g_intrVect[16];
 uint8 			g_intrVectIdx;
 
-void protoSetDeviceId(uint8 *data, uint8 len)
-{
-	uint32 serial;
-
-	serial =  ( ((uint32)data[3] << 24) | \
-			    ((uint32)data[2] << 16) | \
-			    ((uint32)data[1] << 8)  | \
-			    ((uint32)data[0] << 0) );
-
-	gSysParam.serial = serial;
-	g_sysOperMode |= MODE_PARAM_UPDATE;
-
-	/*******************************
-	 * set reply message
-	 ******************************/
-	data[0] = ACK;
-
-	return ;
-}
-
-void protoGetDeviceId(uint8 *data, uint8 len)
-{
-	uint32 serial = gSysParam.serial;
-
-	data[3] = (serial >> 24) & 0xFF;
-	data[2] = (serial >> 16) & 0xFF;
-	data[1] = (serial >> 8)  & 0xFF;
-	data[0] = (serial >> 0)  & 0xFF;
-
-	return ;
-}
-
 void protoSetDeviceAddr(uint8 *data, uint8 len)
 {
 	if ( (data[0] >= ADDRESS_MIN) && (data[0] <= ADDRESS_MAX) )
 	{
-		gSysParam.modbusAddr = data[0];
+		gSysParam.address = data[0];
 		g_sysOperMode |= MODE_PARAM_UPDATE;
 		data[0] = ACK;
 	}
@@ -83,7 +51,7 @@ void protoSetDeviceAddr(uint8 *data, uint8 len)
 
 void protoGetDeviceAddr(uint8 *data, uint8 len)
 {
-	data[0] = gSysParam.modbusAddr;
+	data[0] = gSysParam.address;
 
 	return ;
 }
@@ -92,10 +60,10 @@ void protoSetFwInfo(uint8 *data, uint8 len)
 {
 	uint32 length;
 
-	length  = ( ((uint32)data[5] << 24) | \
-		    	((uint32)data[4] << 16) | \
-		    	((uint32)data[3] << 8)  | \
-		    	((uint32)data[2] << 0) );
+	length  = ( ((uint32)data[3] << 24) | \
+		    	((uint32)data[2] << 16) | \
+		    	((uint32)data[1] << 8)  | \
+		    	((uint32)data[0] << 0) );
 
 	if (length > FIRMWARE_LEN_MAX)
 	{
@@ -105,15 +73,6 @@ void protoSetFwInfo(uint8 *data, uint8 len)
 	{
 		g_firmwareLength = length;
 		g_firmwareRecvLength = 0;
-
-		/*********************************
-		 * 1. upgrade firmware version
-		 ********************************/
-		updateSysParams(&gSysParam);
-
-		/*********************************
-		 * 2. erase application segments
-		 ********************************/
 		upgradeFwEraseSegments(length);
 
 		g_protoState = PROTO_STAT_UPGRADE;
@@ -190,30 +149,25 @@ void protoSendVector(uint8 *data, uint8 len)
 void protoBoot2Upgrade(uint8 *data, uint8 len)
 {
 	g_protoState = PROTO_STAT_MISC;
+
+	g_sysOperMode |= MODE_REBOOT_UPGRADE;
 	data[0] = ACK;
 
 	return ;
 }
 
-void protoReboot(uint8 *data, uint8 len)
+void protoBoot2App(uint8 *data, uint8 len)
 {
 	g_protoState = PROTO_STAT_MISC;
 
-	/****************************
-	 * if payload data is 1, then
+	/*********************************
 	 * program interrupt vector
-	 * segment, otherwise just
-	 * reboot
-	 ***************************/
-	if (data[0] == 1)
-	{
-		g_sysOperMode |= MODE_REBOOT_APP;
-	}
-	else
-	{
-		g_sysOperMode |= MODE_REBOOT;
-	}
-
+	 * segment after sending
+	 * back reply packet, otherwise
+	 * the serial port ISR will
+	 * be affected
+	 *******************************/
+	g_sysOperMode |= MODE_REBOOT_APP;
 	data[0] = ACK;
 
 	return ;
@@ -228,11 +182,11 @@ eProtocolErrno protocolCheckPacket(void)
 	{
 		rc = PROTO_ESIZE;
 	}
-	else if ( (pkt[ADDR_OFF] != ADDR_BROADCAST) && (pkt[ADDR_OFF] != gSysParam.modbusAddr) )
+	else if ( (pkt[ADDR_OFF] != ADDR_BROADCAST) && (pkt[ADDR_OFF] != gSysParam.address) )
 	{
 		rc = PROTO_EADDR;
 	}
-	else if ( (pkt[FUNC_OFF]>FUNC_REBOOT) || (pkt[FUNC_OFF]<FUNC_SETID) )
+	else if ( (pkt[FUNC_OFF]>FUNC_BOOT2APP) || (pkt[FUNC_OFF]<FUNC_SETADDR) )
 	{
 		rc = PROTO_EFUNC;
 	}
@@ -316,16 +270,6 @@ void protocolProcessPacket(void)
 	func = g_serialPortBuf[FUNC_OFF];
 	switch (func)
 	{
-	case FUNC_SETID:
-		protoSetDeviceId(pldBuf, pldLen);
-		g_serialPortBuf[PLEN_OFF] = 1;
-		break;
-
-	case FUNC_GETID:
-		protoGetDeviceId(pldBuf, pldLen);
-		g_serialPortBuf[PLEN_OFF] = 4;
-		break;
-
 	case FUNC_SETADDR:
 		protoSetDeviceAddr(pldBuf, pldLen);
 		g_serialPortBuf[PLEN_OFF] = 1;
@@ -333,11 +277,6 @@ void protocolProcessPacket(void)
 
 	case FUNC_GETADDR:
 		protoGetDeviceAddr(pldBuf, pldLen);
-		g_serialPortBuf[PLEN_OFF] = 1;
-		break;
-
-	case FUNC_BOOT2UPGRADE:	// also implemented in probe application code
-		protoBoot2Upgrade(pldBuf, pldLen);
 		g_serialPortBuf[PLEN_OFF] = 1;
 		break;
 
@@ -356,8 +295,13 @@ void protocolProcessPacket(void)
 		g_serialPortBuf[PLEN_OFF] = 1;
 		break;
 
-	case FUNC_REBOOT:
-		protoReboot(pldBuf, pldLen);
+	case FUNC_BOOT2UPGRADE:
+		protoBoot2Upgrade(pldBuf, pldLen);
+		g_serialPortBuf[PLEN_OFF] = 1;
+		break;
+
+	case FUNC_BOOT2APP:
+		protoBoot2App(pldBuf, pldLen);
 		g_serialPortBuf[PLEN_OFF] = 1;
 		break;
 
@@ -386,7 +330,6 @@ void protocolSendPacket(uint8 *buf, uint8 len)
 	g_serialPortBufSendCnt = len;
 	g_serialPortSendPtr = g_serialPortBuf;
 
-	/* Calculate CRC16 checksum for Modbus-Serial-Line-PDU. */
 	checksum = computeChecksum(buf, len-2);
 	buf[CSM_OFF] = (uint8)(checksum & 0xFF);
     buf[CSM_OFF+1] = (uint8)(checksum >> 8);

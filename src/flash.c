@@ -91,6 +91,14 @@ int flashWriteInfoMem(uint8 *dst, uint8 *src, uint8 len)
 	return 0;
 }
 
+/******************************************
+ * func: flashReadIntrVecAddr
+ * desc: read ISR address
+ * input:
+ * 	addr - ISR vector address
+ * output: none
+ * return: ISR address
+ *****************************************/
 uint16 flashReadIntrVecAddr(uint8 *addr)
 {
 	uint8  valHigh, valLow;
@@ -104,6 +112,15 @@ uint16 flashReadIntrVecAddr(uint8 *addr)
 	return intVectAddr;
 }
 
+/******************************************
+ * func: flashWriteIntrVecAddr
+ * desc: write ISR address
+ * input:
+ * 	addr - ISR vector address
+ * 	value - ISR address
+ * output: none
+ * return: none
+ *****************************************/
 void flashWriteIntrVecAddr(uint8 *addr, uint16 value)
 {
 	uint8 *flashPtr;
@@ -129,6 +146,13 @@ void flashWriteIntrVecAddr(uint8 *addr, uint16 value)
 	return ;
 }
 
+/******************************************
+ * func: flashEraseIntrVecSegment
+ * desc: earse ISR vectors segment
+ * input: none
+ * output: none
+ * return: none
+ *****************************************/
 void flashEraseIntrVecSegment(void)
 {
 	uint8 *flashPtr;
@@ -149,6 +173,15 @@ void flashEraseIntrVecSegment(void)
 	return ;
 }
 
+/**********************************************
+ * func: flashEraseAppSegments
+ * desc: erase application firmware segments
+ * input:
+ *  addr - application firmware start address
+ *  length - application firmware length
+ * output: none
+ * return: none
+ *********************************************/
 void flashEraseAppSegments(uint8* addr, uint32 length)
 {
 	uint16 i;
@@ -176,6 +209,13 @@ void flashEraseAppSegments(uint8* addr, uint32 length)
 	return ;
 }
 
+/**********************************************
+ * func: flashPopulateIntrVecSegment
+ * desc: write ISR addresses to ISR vectors
+ * input: none
+ * output: none
+ * return: none
+ *********************************************/
 void flashPopulateIntrVecSegment(void)
 {
 	flashWriteIntrVecAddr((uint8 *)FLASH_INT15_ADDR, (uint16)_c_int00);

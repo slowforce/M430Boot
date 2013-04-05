@@ -40,29 +40,13 @@ extern "C" {
 #define	PDU_SIZE			(16)
 #define	MAX_PLD_SIZE		(10)
 
-#define	FUNC_SETID			(0x64)
-#define	FUNC_GETID			(0x65)
-#define	FUNC_SETADDR		(0x66)
-#define	FUNC_GETADDR		(0x67)
-#define	FUNC_SETTIME		(0x68)
-#define	FUNC_GETTIME		(0x69)
-#define	FUNC_GETFWINFO		(0x6A)
-
-#define	FUNC_BOOT2UPGRADE	(0x70)
-#define	FUNC_SETFWINFO		(0x71)
-#define	FUNC_SENDFWDATA		(0x72)
-#define	FUNC_SENDVECT		(0x73)
-#define	FUNC_REBOOT			(0x74)
-
-#define	PLEN_SETID			(4)
-#define	PLEN_GETID			(0)
-#define	PLEN_SETADDR		(1)
-#define	PLEN_GETADDR		(0)
-#define	PLEN_SETTIME		(4)
-#define	PLEN_GETTIME		(0)
-#define	PLEN_BOOT2UPGRADE	(0)
-#define	PLEN_SENDFWINFO		(6)
-#define PLEN_REBOOT			(0)
+#define	FUNC_SETADDR		(0x64)
+#define	FUNC_GETADDR		(0x65)
+#define	FUNC_SETFWINFO		(0x66)
+#define	FUNC_SENDFWDATA		(0x67)
+#define	FUNC_SENDVECT		(0x68)
+#define	FUNC_BOOT2UPGRADE	(0x69)
+#define	FUNC_BOOT2APP		(0x6A)
 
 typedef	enum
 {

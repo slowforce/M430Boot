@@ -28,7 +28,7 @@ extern "C" {
 #define	MODE_SERIAL			(1)
 #define	MODE_PARAM_UPDATE	(2)
 #define	MODE_REBOOT_APP		(4)
-#define	MODE_REBOOT			(8)
+#define	MODE_REBOOT_UPGRADE	(8)
 
 extern uint8  g_sysOperMode;
 

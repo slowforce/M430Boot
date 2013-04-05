@@ -42,11 +42,11 @@ typedef	struct sysParam
 {
 	uint32   	serial;				/* 1032-1033, read only */
 	uint16 		config;				/* 1034, read only, indicate if device is configured */
-	uint16		modbusAddr;			/* 1035, r/w */
-	uint16		modbusDatabits;		/* 1036, r/w */
-	uint16		modbusParity;		/* 1037, r/w */
-	uint32		modbusBaud;			/* 1038-1039, r/w */
-	uint16		reset;				/* 1040, reserved 1 */
+	uint16		address;			/* 1035, r/w */
+	uint32		baudrate;			/* 1038-1039, r/w */
+	uint16		databits;			/* 1036, r/w */
+	uint16		parity;				/* 1037, r/w */
+	uint32		rsvd;				/* 1040, reserved */
 } SYSPARAM_T;
 
 extern SYSPARAM_T  	gSysParam;
@@ -59,6 +59,7 @@ extern void updateSysParams(SYSPARAM_T *);
 extern void initBootParam(BOOTPARAM_T *);
 extern void resetBootParam(BOOTPARAM_T *);
 extern void updateBootParam(BOOTPARAM_T *);
+extern void restoreBootParam(BOOTPARAM_T *);
 
 #ifdef __cplusplus
 }

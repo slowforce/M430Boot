@@ -48,7 +48,6 @@ void initSerialPort(uint32 baudrate, uint8 databits, uint8 parity)
      * and similar for t3.5.
      ***********************************************************/
 	t35Cnt = (7UL*220000UL) / (2UL*baudrate);
-	//t35Cnt = 50;
 
 	serialPortInit(baudrate, databits, parity);
 	serialPortTimerInit(t35Cnt);
@@ -61,7 +60,7 @@ void sendBootupPacket(void)
 {
 	g_serialPortRecvState = STATE_RX_IDLE;
 
-	g_serialPortBuf[ADDR_OFF] = gSysParam.modbusAddr;
+	g_serialPortBuf[ADDR_OFF] = gSysParam.address;
 	g_serialPortBuf[FUNC_OFF] = FUNC_BOOT2UPGRADE;
 	g_serialPortBuf[SEQ_OFF] = 1;
 	g_serialPortBuf[PLEN_OFF] = 1;
@@ -169,7 +168,7 @@ void main(void)
 	/***************************************************
 	 * initialize serial port
 	 **************************************************/
-	initSerialPort(gSysParam.modbusBaud, (uint8)gSysParam.modbusDatabits, (uint8)gSysParam.modbusParity);
+	initSerialPort(gSysParam.baudrate, (uint8)gSysParam.databits, (uint8)gSysParam.parity);
 
 	/**********************************************
 	 * send out bootup packet to acknowledge
@@ -194,8 +193,9 @@ void main(void)
 			upgradeFwUpdateIntrVect();
 			rebootSys();
 		}
-		else if (g_sysOperMode & MODE_REBOOT)
+		else if (g_sysOperMode & MODE_REBOOT_UPGRADE)
 		{
+			restoreBootParam(&gBootParam);
 			rebootSys();
 		}
 		else
@@ -203,6 +203,5 @@ void main(void)
 			serialPortPoll();
 		}
 	}
-
 }
 

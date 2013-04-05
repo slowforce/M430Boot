@@ -26,19 +26,35 @@
 SYSPARAM_T  gSysParam;
 BOOTPARAM_T	gBootParam;
 
+/*********************************************
+ * func: resetSysParams
+ * desc: reset system parameters
+ * input:
+ * 	sys - system parameter pointer
+ * output: parameters are set default value
+ * return: none
+ ********************************************/
 void resetSysParams(SYSPARAM_T *sys)
 {
 	sys->serial = 0x2013;
-	sys->modbusAddr = 10;
-	sys->modbusDatabits = 8;
-	sys->modbusParity = PARITY_EVEN;
-	sys->modbusBaud = 9600;
+	sys->address = 10;
+	sys->baudrate = 9600;
+	sys->databits = 8;
+	sys->parity = PARITY_EVEN;
 	sys->config = CONFIG_DEFAULT;
-	sys->reset = 0;
+	sys->rsvd = 0;
 
 	return ;
 }
 
+/*********************************************
+ * func: updateSysParams
+ * desc: write parameter to info FLASH
+ * input:
+ * 	sys - system parameter pointer
+ * output: none
+ * return: none
+ ********************************************/
 void updateSysParams(SYSPARAM_T *sys)
 {
 	sys->config = CONFIG_UPDATED;
@@ -47,6 +63,15 @@ void updateSysParams(SYSPARAM_T *sys)
 	return ;
 }
 
+/*********************************************
+ * func: initSysParams
+ * desc: read parameters from info FLASH B
+ * input:
+ * 	sys - parameter pointer
+ * output: parameters are initialized with
+ * 		   values from info FLASH B
+ * return: none
+ ********************************************/
 void initSysParams(SYSPARAM_T *sys)
 {
 	/**************************************************
@@ -69,17 +94,32 @@ void initSysParams(SYSPARAM_T *sys)
 	return ;
 }
 
-
+/*********************************************
+ * func: resetBootParam
+ * desc: reset boot parameters
+ * input:
+ * 	boot - boot parameter pointer
+ * output: parameters are set default value
+ * return: none
+ ********************************************/
 void resetBootParam(BOOTPARAM_T *boot)
 {
 	boot->resetAddr = 0xFFFF;
-	boot->rsvd1 = 0x0001;
-	boot->rsvd2 = 0x0002;
-	boot->rsvd3 = 0x0003;
+	boot->rsvd1 = 0x2009;
+	boot->rsvd2 = 0x0010;
+	boot->rsvd3 = 0x0013;
 
 	return ;
 }
 
+/*********************************************
+ * func: updateBootParam
+ * desc: write parameter to info FLASH A
+ * input:
+ * 	boot - boot parameter pointer
+ * output: none
+ * return: none
+ ********************************************/
 void updateBootParam(BOOTPARAM_T *boot)
 {
 	flashWriteInfoMem((uint8 *)FLASH_INFO_A, (uint8 *)boot, sizeof(BOOTPARAM_T));
@@ -87,11 +127,22 @@ void updateBootParam(BOOTPARAM_T *boot)
 	return ;
 }
 
+/***********************************************
+ * func: initBootParam
+ * desc: read boot parameter from info FLASH B
+ * input:
+ * 	boot - boot parameter pointer
+ * output: parameters are initialized with
+ * 		   values from info FLASH A
+ * return: none
+ **********************************************/
 void initBootParam(BOOTPARAM_T *boot)
 {
 	flashReadInfoMem((uint8 *)boot, (uint8 *)FLASH_INFO_A, sizeof(BOOTPARAM_T));
 
-	if (gBootParam.rsvd1 != 0x0001)
+	if ( (gBootParam.rsvd1 != 0x2009) ||
+		 (gBootParam.rsvd2 != 0x0010) ||
+		 (gBootParam.rsvd3 != 0x0013) )
 	{
 		resetBootParam(boot);
 		updateBootParam(boot);
@@ -100,5 +151,24 @@ void initBootParam(BOOTPARAM_T *boot)
 	return ;
 }
 
+/*************************************************
+ * func: restoreBootParam
+ * desc: check reset address, restore it to
+ * 		 0xFFFF and write back to info FLASH A
+ * input:
+ * 	boot - boot parameter pointer
+ * output: boot parameters are restored
+ * return: none
+ ************************************************/
+void restoreBootParam(BOOTPARAM_T *boot)
+{
+	flashReadInfoMem((uint8 *)&gBootParam, (uint8 *)FLASH_INFO_A, sizeof(BOOTPARAM_T));
 
+	if (gBootParam.resetAddr != 0xFFFF)
+	{
+		resetBootParam(&gBootParam);
+		updateBootParam(&gBootParam);
+	}
 
+	return ;
+}
